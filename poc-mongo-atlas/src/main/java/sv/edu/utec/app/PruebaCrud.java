@@ -1,18 +1,17 @@
 package sv.edu.utec.app;
 
 import com.mongodb.MongoException;
-import sv.edu.utec.datos.ConexionMongo;
-import sv.edu.utec.datos.MongoProductoRepositorio;
-import sv.edu.utec.datos.ProductoRepositorio;
-import sv.edu.utec.datos.RepositorioException;
+import sv.edu.utec.datos.*;
 import sv.edu.utec.Modelo.Producto;
 
 public class PruebaCrud {
 
     public static void main(String[] args) {
         try {
-            ProductoRepositorio repo =
-                    new MongoProductoRepositorio(ConexionMongo.getBaseDeDatos());
+            // CAMBIO 1: Se usa FabricaRepositorio para crear el repositorio
+            ProductoRepositorio repo = FabricaRepositorio.crear();
+            System.out.println("Motor: "
+                    + repo.getClass().getSimpleName());
 
             // 0. Limpieza: la prueba se puede ejecutar varias veces
             for (Producto p : DatosDemo.productos()) {
@@ -31,7 +30,8 @@ public class PruebaCrud {
             try {
                 repo.insertar(new Producto("P-001", "Duplicado", "Abarrotes", 1.00, 1));
             } catch (RepositorioException e) {
-                System.out.println("   Rechazado por MongoDB: " + e.getMessage());
+                // CAMBIO 2: Cambiar "Rechazado por MongoDB" a "Rechazado por la base"
+                System.out.println("   Rechazado por la base: " + e.getMessage());
             }
             try {
                 repo.insertar(new Producto("P-010", "Error", "Abarrotes", -5.00, 1));
@@ -88,10 +88,14 @@ public class PruebaCrud {
                     "   %-10s %d productos  %4d u.  $%9.2f%n",
                     r.categoria(), r.productos(), r.unidades(), r.valorInventario()));
 
+            // CAMBIO 3: Capturar RepositorioException e IllegalStateException antes de MongoException
+        } catch (RepositorioException | IllegalStateException e) {
+            System.err.println("Error de datos: " + e.getMessage());
         } catch (MongoException e) {
             System.err.println("Error de MongoDB: " + e.getMessage());
         } finally {
-            ConexionMongo.cerrar();
+            // CAMBIO 4: Usar FabricaRepositorio para cerrar las conexiones
+            FabricaRepositorio.cerrarConexiones();
         }
     }
 }
